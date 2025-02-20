@@ -1,0 +1,20 @@
+﻿@{
+    ViewData["Title"] = "Calculator";
+}
+
+<h2>Simple Calculator</h2>
+
+<form asp-action="Calculate" method="post">
+    <label>Number 1:</label>
+    <input type="number" name="num1" required />
+    <br />
+    <label>Number 2:</label>
+    <input type="number" name="num2" required />
+    <br /><br />
+    <button name="operation" value="add" type="submit">+</button>
+    <button name="operation" value="subtract" type="submit">-</button>
+    <button name="operation" value="multiply" type="submit">*</button>
+    <button name="operation" value="divide" type="submit">/</button>
+</form>
+
+<h3>Result: @ViewBag.Result</h3>
