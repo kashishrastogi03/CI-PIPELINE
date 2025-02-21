@@ -3,7 +3,7 @@ name: Advanced Build, Test & Artifact Pipeline
 on:
   push:
     branches:
-      - develop
+      - develop 
       - 'feature-*'
   pull_request:
     branches:
