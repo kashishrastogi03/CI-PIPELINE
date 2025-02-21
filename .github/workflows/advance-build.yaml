@@ -45,7 +45,7 @@ jobs:
             --logger "trx;LogFileName=TestResults/test_results.trx" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=TestResults/coverage.xml
+            /p:CoverletOutput=./TestResults/coverage.xml
 
       # 6. List the TestResults directory for diagnostics
       - name: List TestResults Directory
