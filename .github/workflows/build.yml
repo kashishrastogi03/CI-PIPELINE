@@ -12,7 +12,6 @@ on:
 
 jobs:
   build-and-test:
-    # Use self-hosted runner if available; otherwise default to ubuntu-latest.
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +21,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'  # Adjust to your target .NET version
+          dotnet-version: '8.0.x'
 
       - name: Restore Dependencies
         run: dotnet restore
@@ -32,22 +31,22 @@ jobs:
 
       - name: Run Unit Tests and Generate Test Report
         run: |
-         mkdir -p TestResults
-         dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test_results.trx"
+          mkdir -p TestResults
+          dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test_results.trx"
 
+      - name: List TestResults Directory
+        run: ls -la TestResults
 
       - name: Publish Test Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-         name: test-report
-         path: TestResults/test_results.trx
-
+          name: test-report
+          path: TestResults/test_results.trx
 
       - name: Copy Build Output for Artifact
         run: |
           mkdir -p artifacts
-          # Adjust the source path to match your project output; this example copies all Debug outputs.
           cp -r **/bin/Debug/* artifacts/
 
       - name: Upload Build Artifacts
