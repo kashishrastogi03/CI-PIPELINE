@@ -41,7 +41,7 @@ jobs:
       - name: Run Unit Tests with Code Coverage
         run: |
           mkdir -p TestResults
-          dotnet test --configuration Debug --no-build -v diag \
+          dotnet test --configuration Debug --no-build \
            --logger "trx;LogFileName=TestResults/test_results.trx" \
            /p:CollectCoverage=true \
            /p:CoverletOutputFormat=opencover \
