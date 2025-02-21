@@ -50,8 +50,6 @@ jobs:
       # 6. List the TestResults directory for diagnostics
       - name: List TestResults Directory
         run: ls -la TestResults
-      - name: List All Files Recursively
-        run: find . -type f | sort
 
       # 7. Upload test report artifact (using a glob pattern)
       - name: Upload Test Report Artifact
@@ -67,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage
-          path: 'TestResults/coverage.xml'
+          path: '**/coverage.xml'
 
       # 9. Copy build output to an artifacts folder for download
       - name: Copy Build Output for Artifact
