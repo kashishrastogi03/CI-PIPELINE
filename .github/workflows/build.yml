@@ -1,1 +1,56 @@
+name: CI Build, Test & Artifact Upload
+
+on:
+  push:
+    branches:
+      - develop
+      - 'feature-*'
+  pull_request:
+    branches:
+      - develop
+      - 'feature-*'
+
+jobs:
+  build-and-test:
+    # Use self-hosted runner if available; otherwise default to ubuntu-latest.
+    runs-on: [self-hosted, ubuntu-latest]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.102'  # Adjust to your target .NET version
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Build Solution
+        run: dotnet build --configuration Debug --no-restore
+
+      - name: Run Unit Tests and Generate Test Report
+        run: |
+          # Run tests and generate a TRX test report file.
+          dotnet test --configuration Debug --no-build --logger "trx;LogFileName=test_results.trx"
+
+      - name: Publish Test Report Artifact
+        if: always()  # Upload even if tests fail, to allow for debugging
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-report
+          path: '**/TestResults/*.trx'
+
+      - name: Copy Build Output for Artifact
+        run: |
+          mkdir -p artifacts
+          # Adjust the source path to match your project output; this example copies all Debug outputs.
+          cp -r **/bin/Debug/* artifacts/
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifacts
+          path: artifacts/
 
