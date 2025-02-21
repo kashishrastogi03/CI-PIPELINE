@@ -41,8 +41,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
-          path: TestResults/test_results.trx
+         name: test-report
+         path: '**/test_results.trx'
 
       - name: Copy Build Output for Artifact
         run: |
