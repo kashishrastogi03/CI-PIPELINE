@@ -1,1 +1,82 @@
 
+name: Advanced Build, Test, and Artifact Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - 'feature-*'
+  pull_request:
+    branches:
+      - develop
+      - 'feature-*'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      # 2. Setup .NET SDK (targeting .NET 8.0 in this example)
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      # Optional: Verify installed SDK version
+      - name: Verify .NET SDK
+        run: dotnet --list-sdks
+
+      # 3. Restore project dependencies
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      # 4. Build the solution in Debug configuration (no restore as it is already done)
+      - name: Build Solution
+        run: dotnet build --configuration Debug --no-restore
+
+      # 5. Run unit tests with code coverage reporting and generate TRX test report
+      - name: Run Unit Tests with Code Coverage
+        run: |
+          mkdir -p TestResults
+          dotnet test --configuration Debug --no-build \
+            --logger "trx;LogFileName=TestResults/test_results.trx" \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=opencover \
+            /p:CoverletOutput=TestResults/coverage.xml
+
+      # 6. List the TestResults folder to verify TRX and coverage files are generated
+      - name: List TestResults Directory
+        run: ls -la TestResults
+
+      # 7. Upload test report artifact (using a glob pattern to find TRX file)
+      - name: Upload Test Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: '**/TestResults/test_results.trx'
+
+      # 8. Upload code coverage report artifact
+      - name: Upload Code Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: '**/TestResults/coverage.xml'
+
+      # 9. Copy build output to an artifacts folder for download
+      - name: Copy Build Output for Artifact
+        run: |
+          mkdir -p artifacts
+          cp -r **/bin/Debug/* artifacts/
+
+      # 10. Upload build artifacts
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: artifacts/
