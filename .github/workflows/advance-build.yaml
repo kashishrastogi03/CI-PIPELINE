@@ -37,16 +37,12 @@ jobs:
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
 
-      # 5. Run unit tests with code coverage and generate TRX test report
-      - name: Run Unit Tests with Code Coverage
+      - name: Run Unit Tests with Code Coverage (XPlat)
         run: |
           mkdir -p TestResults
           dotnet test --configuration Debug --no-build \
-           --logger "trx;LogFileName=TestResults/test_results.trx" \
-           /p:CollectCoverage=true \
-           /p:CoverletOutputFormat=opencover \
-           /p:CoverletOutput=TestResults/coverage.xml
-
+          --logger "trx;LogFileName=TestResults/test_results.trx" \
+          --collect:"XPlat Code Coverage"
 
       # 6. List the TestResults directory for diagnostics
       - name: List TestResults Directory
@@ -69,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage
-          path: '**/coverage.xml'
+          path: '**/coverage*.xml'
 
       # 9. Copy build output to an artifacts folder for download
       - name: Copy Build Output for Artifact
