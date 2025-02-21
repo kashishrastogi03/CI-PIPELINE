@@ -1,5 +1,4 @@
-
-name: Advanced Build, Test, and Artifact Pipeline
+name: Advanced Build, Test & Artifact Pipeline
 
 on:
   push:
@@ -20,13 +19,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      # 2. Setup .NET SDK (targeting .NET 8.0 in this example)
+      # 2. Setup .NET SDK (targeting .NET 8.0)
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
 
-      # Optional: Verify installed SDK version
+      # Optional: Verify the installed SDK version
       - name: Verify .NET SDK
         run: dotnet --list-sdks
 
@@ -38,7 +37,7 @@ jobs:
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
 
-      # 5. Run unit tests with code coverage reporting and generate TRX test report
+      # 5. Run unit tests with code coverage and generate TRX test report
       - name: Run Unit Tests with Code Coverage
         run: |
           mkdir -p TestResults
@@ -48,11 +47,11 @@ jobs:
             /p:CoverletOutputFormat=opencover \
             /p:CoverletOutput=TestResults/coverage.xml
 
-      # 6. List the TestResults folder to verify TRX and coverage files are generated
+      # 6. List the TestResults directory for diagnostics
       - name: List TestResults Directory
         run: ls -la TestResults
 
-      # 7. Upload test report artifact (using a glob pattern to find TRX file)
+      # 7. Upload test report artifact (using a glob pattern)
       - name: Upload Test Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -60,13 +59,13 @@ jobs:
           name: test-report
           path: '**/TestResults/test_results.trx'
 
-      # 8. Upload code coverage report artifact
+      # 8. Upload code coverage artifact
       - name: Upload Code Coverage Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage
-          path: '**/TestResults/coverage.xml'
+          path: 'TestResults/coverage.xml'
 
       # 9. Copy build output to an artifacts folder for download
       - name: Copy Build Output for Artifact
