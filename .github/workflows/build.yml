@@ -9,6 +9,8 @@ on:
     branches:
       - develop
       - 'feature-*'
+  schedule:
+    - cron: '30 11 * * 3,5'  # Runs at 11:30 AM UTC (5:00 PM IST) on Wednesday & Friday
 
 jobs:
   build-and-test:
@@ -41,8 +43,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-         name: test-report
-         path: '**/test_results.trx'
+          name: test-report
+          path: '**/test_results.trx'
 
       - name: Copy Build Output for Artifact
         run: |
