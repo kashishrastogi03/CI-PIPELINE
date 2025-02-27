@@ -49,19 +49,21 @@ jobs:
       # 5. Generate Version Tag
       - name: Generate Version Tag
         id: version
-        shell: bash
+        shell: pwsh
         run: |
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          COMMIT_HASH=${GITHUB_SHA::7}
-          if [[ "$BRANCH_NAME" == "develop" ]]; then
-            VERSION_TAG="develop-latest"
-          elif [[ "$BRANCH_NAME" == feature-* ]]; then
-            VERSION_TAG="${BRANCH_NAME}-${COMMIT_HASH}"
-          else
-            VERSION_TAG="release-${BRANCH_NAME}-${COMMIT_HASH}"
-          fi
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-          echo "Generated Version Tag: $VERSION_TAG"
+          $BRANCH_NAME = "${{ github.ref }}" -replace '^refs/heads/', ''
+          $COMMIT_HASH = "${{ github.sha }}".Substring(0, 7)
+          if ($BRANCH_NAME -eq "develop") {
+            $VERSION_TAG = "develop-latest"
+          }
+          elseif ($BRANCH_NAME -like "feature-*") {
+            $VERSION_TAG = "$BRANCH_NAME-$COMMIT_HASH"
+          }
+          else {
+            $VERSION_TAG = "release-$BRANCH_NAME-$COMMIT_HASH"
+          }
+          echo "VERSION_TAG=$VERSION_TAG" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "Generated Version Tag: $VERSION_TAG"
 
       # 6. Build the solution
       - name: Build Solution
@@ -74,15 +76,18 @@ jobs:
       # 8. Run Unit Tests with Code Coverage
       - name: Run Unit Tests with Code Coverage (XPlat)
         continue-on-error: true
+        shell: pwsh
         run: |
-          mkdir -p TestResults
-          ${{ runner.temp }}/dotnet/dotnet test --configuration Debug --no-build \
-          --logger "trx;LogFileName=TestResults/test_results.trx" \
+          if (!(Test-Path -Path "TestResults")) {
+            New-Item -ItemType Directory -Path "TestResults"
+          }
+          ${{ runner.temp }}/dotnet/dotnet test --configuration Debug --no-build `
+          --logger "trx;LogFileName=TestResults/test_results.trx" `
           --collect:"XPlat Code Coverage"
 
       # 9. List TestResults directory
       - name: List TestResults Directory
-        run: ls -la TestResults
+        run: Get-ChildItem TestResults
 
       # 10. Upload Test Report Artifact
       - name: Upload Test Report Artifact
@@ -102,9 +107,12 @@ jobs:
 
       # 12. Copy Build Output for Artifact
       - name: Copy Build Output for Artifact
+        shell: pwsh
         run: |
-          mkdir -p artifacts
-          cp -r **/bin/Debug/* artifacts/
+          if (!(Test-Path -Path "artifacts")) {
+            New-Item -ItemType Directory -Path "artifacts"
+          }
+          Copy-Item -Path "**/bin/Debug/*" -Destination "artifacts" -Recurse
 
       # 13. Upload Build Artifacts
       - name: Upload Build Artifacts
