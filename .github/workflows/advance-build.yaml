@@ -3,7 +3,7 @@ name: Advanced Build, Test & Artifact Pipeline
 on:
   push:
     branches:
-      - develop 
+      - develop
       - 'feature-*'
   pull_request:
     branches:
@@ -21,13 +21,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      # 2. Setup .NET SDK (targeting .NET 8.0)
+      # 2. Setup .NET SDK with Custom Install Directory
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
+          install-dir: C:\Users\kashishrastogi\dotnet # Custom directory
 
-      # Optional: Verify the installed SDK version
+      # Optional: Verify .NET SDK installation
       - name: Verify .NET SDK
         run: dotnet --list-sdks
 
@@ -51,7 +52,7 @@ jobs:
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
           echo "Generated Version Tag: $VERSION_TAG"
 
-      # 5. Build the solution in Debug configuration
+      # 5. Build the solution
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
 
@@ -59,7 +60,8 @@ jobs:
       - name: Static Code Analysis
         run: dotnet format --verify-no-changes
 
-      - name: Run Unit Tests with Code Coverage (XPlat)
+      # 7. Run Unit Tests with Code Coverage
+      - name: Run Unit Tests with Code Coverage
         continue-on-error: true
         run: |
           mkdir -p TestResults
@@ -67,11 +69,11 @@ jobs:
           --logger "trx;LogFileName=TestResults/test_results.trx" \
           --collect:"XPlat Code Coverage"
 
-      # 7. List the TestResults directory
+      # 8. List TestResults Directory
       - name: List TestResults Directory
         run: ls -la TestResults
 
-      # 8. Upload Test Report Artifact
+      # 9. Upload Test Report Artifact
       - name: Upload Test Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -79,7 +81,7 @@ jobs:
           name: test-report-${{ env.VERSION_TAG }}
           path: '**/TestResults/test_results.trx'
 
-      # 9. Upload Code Coverage Artifact
+      # 10. Upload Code Coverage Artifact
       - name: Upload Code Coverage Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -87,13 +89,13 @@ jobs:
           name: code-coverage-${{ env.VERSION_TAG }}
           path: '**/coverage*.xml'
 
-      # 10. Copy Build Output
-      - name: Copy Build Output for Artifact
+      # 11. Copy Build Output for Artifact
+      - name: Copy Build Output
         run: |
           mkdir -p artifacts
           cp -r **/bin/Debug/* artifacts/
 
-      # 11. Upload Build Artifacts
+      # 12. Upload Build Artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
