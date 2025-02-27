@@ -14,11 +14,19 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+
+      - name: Cache NuGet Packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
@@ -34,17 +42,18 @@ jobs:
       - name: Run Unit Tests and Generate Test Report
         run: |
           mkdir -p TestResults
-          dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test_results.trx"
+          dotnet test --configuration Debug --no-build \
+            --logger "trx;LogFileName=TestResults/test_results.trx"
 
       - name: List TestResults Directory
         run: ls -la TestResults
 
-      - name: Publish Test Report Artifact
+      - name: Upload Test Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
-          path: '**/test_results.trx'
+          name: test-report-${{ github.sha }}
+          path: TestResults/test_results.trx
 
       - name: Copy Build Output for Artifact
         run: |
@@ -52,7 +61,8 @@ jobs:
           cp -r **/bin/Debug/* artifacts/
 
       - name: Upload Build Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-${{ github.sha }}
           path: artifacts/
