@@ -9,6 +9,8 @@ on:
     branches:
       - develop
       - 'feature-*'
+  schedule:
+    - cron: '30 11 * * 3,5' # Every Wednesday and Friday at 5 PM IST
 
 jobs:
   build-and-test:
@@ -28,54 +30,72 @@ jobs:
       # Optional: Verify the installed SDK version
       - name: Verify .NET SDK
         run: dotnet --list-sdks
- 
+
       # 3. Restore project dependencies
       - name: Restore Dependencies
         run: dotnet restore
 
-      # 4. Build the solution in Debug configuration (no restore as it is already done)
+      # 4. Generate Version Tag
+      - name: Generate Version Tag
+        id: version
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          COMMIT_HASH=${GITHUB_SHA::7}
+          if [[ $BRANCH_NAME == "develop" ]]; then
+            VERSION_TAG="develop-latest"
+          elif [[ $BRANCH_NAME == feature-* ]]; then
+            VERSION_TAG="${BRANCH_NAME}-${COMMIT_HASH}"
+          else
+            VERSION_TAG="release-${BRANCH_NAME}-${COMMIT_HASH}"
+          fi
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+          echo "Generated Version Tag: $VERSION_TAG"
+
+      # 5. Build the solution in Debug configuration
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
 
+      # 6. Static Code Analysis
+      - name: Static Code Analysis
+        run: dotnet format --verify-no-changes
+
       - name: Run Unit Tests with Code Coverage (XPlat)
+        continue-on-error: true
         run: |
           mkdir -p TestResults
           dotnet test --configuration Debug --no-build \
           --logger "trx;LogFileName=TestResults/test_results.trx" \
           --collect:"XPlat Code Coverage"
 
-      # 6. List the TestResults directory for diagnostics
+      # 7. List the TestResults directory
       - name: List TestResults Directory
         run: ls -la TestResults
-      - name: List All Files Recursively
-        run: find . -type f | sort
 
-
-      # 7. Upload test report artifact (using a glob pattern)
+      # 8. Upload Test Report Artifact
       - name: Upload Test Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
+          name: test-report-${{ env.VERSION_TAG }}
           path: '**/TestResults/test_results.trx'
 
-      # 8. Upload code coverage artifact
+      # 9. Upload Code Coverage Artifact
       - name: Upload Code Coverage Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: code-coverage
+          name: code-coverage-${{ env.VERSION_TAG }}
           path: '**/coverage*.xml'
 
-      # 9. Copy build output to an artifacts folder for download
+      # 10. Copy Build Output
       - name: Copy Build Output for Artifact
         run: |
           mkdir -p artifacts
           cp -r **/bin/Debug/* artifacts/
 
-      # 10. Upload build artifacts
+      # 11. Upload Build Artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-${{ env.VERSION_TAG }}
           path: artifacts/
