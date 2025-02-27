@@ -28,6 +28,7 @@ jobs:
           dotnet-version: '8.0.x'
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+        cache: true
 
       # Optional: Verify the installed SDK version
       - name: Verify .NET SDK
@@ -40,6 +41,7 @@ jobs:
       # 4. Generate Version Tag
       - name: Generate Version Tag
         id: version
+        shell: bash
         run: |
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           COMMIT_HASH=${GITHUB_SHA::7}
