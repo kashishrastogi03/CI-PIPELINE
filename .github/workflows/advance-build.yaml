@@ -21,20 +21,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      # 2. Setup .NET SDK with Custom Install Directory
+      # 2. Setup .NET SDK (Custom Install Directory Fix)
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
-          install-dir: C:\Users\kashishrastogi\dotnet # Custom directory
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
 
-      # Optional: Verify .NET SDK installation
+      # Optional: Verify the installed SDK version
       - name: Verify .NET SDK
-        run: dotnet --list-sdks
+        run: ${{ runner.temp }}/dotnet/dotnet --list-sdks
 
       # 3. Restore project dependencies
       - name: Restore Dependencies
-        run: dotnet restore
+        run: ${{ runner.temp }}/dotnet/dotnet restore
 
       # 4. Generate Version Tag
       - name: Generate Version Tag
@@ -54,22 +55,22 @@ jobs:
 
       # 5. Build the solution
       - name: Build Solution
-        run: dotnet build --configuration Debug --no-restore
+        run: ${{ runner.temp }}/dotnet/dotnet build --configuration Debug --no-restore
 
       # 6. Static Code Analysis
       - name: Static Code Analysis
-        run: dotnet format --verify-no-changes
+        run: ${{ runner.temp }}/dotnet/dotnet format --verify-no-changes
 
       # 7. Run Unit Tests with Code Coverage
-      - name: Run Unit Tests with Code Coverage
+      - name: Run Unit Tests with Code Coverage (XPlat)
         continue-on-error: true
         run: |
           mkdir -p TestResults
-          dotnet test --configuration Debug --no-build \
+          ${{ runner.temp }}/dotnet/dotnet test --configuration Debug --no-build \
           --logger "trx;LogFileName=TestResults/test_results.trx" \
           --collect:"XPlat Code Coverage"
 
-      # 8. List TestResults Directory
+      # 8. List TestResults directory
       - name: List TestResults Directory
         run: ls -la TestResults
 
@@ -89,8 +90,8 @@ jobs:
           name: code-coverage-${{ env.VERSION_TAG }}
           path: '**/coverage*.xml'
 
-      # 11. Copy Build Output for Artifact
-      - name: Copy Build Output
+      # 11. Copy Build Output
+      - name: Copy Build Output for Artifact
         run: |
           mkdir -p artifacts
           cp -r **/bin/Debug/* artifacts/
