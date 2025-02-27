@@ -42,7 +42,7 @@ jobs:
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           COMMIT_HASH=${GITHUB_SHA::7}
           if [[ $BRANCH_NAME == "develop" ]]; then
-            VERSION_TAG="develop-latest"
+            VERSION_TAG="${BRANCH_NAME}-${COMMIT_HASH}"
           elif [[ $BRANCH_NAME == feature-* ]]; then
             VERSION_TAG="${BRANCH_NAME}-${COMMIT_HASH}"
           else
