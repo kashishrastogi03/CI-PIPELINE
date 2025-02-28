@@ -1,7 +1,7 @@
 name: Advanced Build, Test & Artifact Pipeline
 
 on:
-  push:
+  push: 
     branches:
       - develop
       - 'feature-*'
