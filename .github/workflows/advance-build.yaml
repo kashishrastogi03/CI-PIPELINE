@@ -132,3 +132,8 @@ jobs:
             Commit Hash: ${{ github.sha }}
             Please check the pipeline logs.
           secure: true
+
+       # Force Failure Step (Testing Email Notification)
+      - name: Force Build Failure
+        run: exit 1
+        if: always()
