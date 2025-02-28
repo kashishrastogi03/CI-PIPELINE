@@ -114,3 +114,21 @@ jobs:
         with:
           name: build-artifacts-${{ env.VERSION_TAG }}
           path: artifacts/
+
+      # 14. Send Email Notification on Build Failure
+      - name: Send Email Notification
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.office365.com
+          server_port: 587
+          username: ${{ secrets.OUTLOOK_EMAIL }}
+          password: ${{ secrets.OUTLOOK_PASSWORD }}
+          subject: "🚨 Build Failure: ${{ env.VERSION_TAG }}"
+          to: your-email@outlook.com
+          from: ${{ secrets.OUTLOOK_EMAIL }}
+          body: |
+            Build Failed on branch: ${{ github.ref }}
+            Commit Hash: ${{ github.sha }}
+            Please check the pipeline logs.
+          secure: true
