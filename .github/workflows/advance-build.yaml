@@ -38,7 +38,7 @@ jobs:
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
 
-      # Optional: Verify the installed SDK version
+      # To verify the installed SDK version
       - name: Verify .NET SDK
         run: ${{ runner.temp }}/dotnet/dotnet --list-sdks
 
@@ -51,8 +51,8 @@ jobs:
         id: version
         shell: bash
         run: |
-          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          COMMIT_HASH=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}" # this var gives current branch
+          COMMIT_HASH=$(echo "${GITHUB_SHA}" | cut -c1-7) #this var stores commit id
           if [[ "$BRANCH_NAME" == "develop" ]]; then
             VERSION_TAG="develop-latest"
           elif [[ "$BRANCH_NAME" == feature-* ]]; then
@@ -60,8 +60,8 @@ jobs:
           else
             VERSION_TAG="release-$BRANCH_NAME-$COMMIT_HASH"
           fi
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-          echo "Generated Version Tag: $VERSION_TAG"
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV # so can be used anywhere ahead
+          echo "Generated Version Tag: $VERSION_TAG" # for log purpose
 
       # 6. Build the solution
       - name: Build Solution
@@ -124,8 +124,8 @@ jobs:
           server_port: 587
           username: ${{ secrets.OUTLOOK_EMAIL }}
           password: ${{ secrets.OUTLOOK_PASSWORD }}
-          subject: "🚨 Build Failure: ${{ env.VERSION_TAG }}"
-          to: your-email@outlook.com
+          subject: "Build Failure: ${{ env.VERSION_TAG }}"
+          to: ${{ secrets.OUTLOOK_EMAIL }}
           from: ${{ secrets.OUTLOOK_EMAIL }}
           body: |
             Build Failed on branch: ${{ github.ref }}
