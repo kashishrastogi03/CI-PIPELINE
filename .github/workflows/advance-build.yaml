@@ -30,7 +30,7 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}
 
-      # 3. Setup .NET SDK with Custom Install Directory
+      # 3. Setup .NET SDK
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
@@ -38,84 +38,58 @@ jobs:
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
 
-      # To verify the installed SDK version
       - name: Verify .NET SDK
         run: ${{ runner.temp }}/dotnet/dotnet --list-sdks
 
-      # 4. Restore project dependencies
+      # 4. Restore Dependencies
       - name: Restore Dependencies
         run: ${{ runner.temp }}/dotnet/dotnet restore
 
-      # 5. Generate Version Tag
-      - name: Generate Version Tag
-        id: version
-        shell: bash
-        run: |
-          BRANCH_NAME="${GITHUB_REF#refs/heads/}" # this var gives current branch
-          COMMIT_HASH=$(echo "${GITHUB_SHA}" | cut -c1-7) #this var stores commit id
-          if [[ "$BRANCH_NAME" == "develop" ]]; then
-            VERSION_TAG="develop-latest"
-          elif [[ "$BRANCH_NAME" == feature-* ]]; then
-            VERSION_TAG="$BRANCH_NAME-$COMMIT_HASH"
-          else
-            VERSION_TAG="release-$BRANCH_NAME-$COMMIT_HASH"
-          fi
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV # so can be used anywhere ahead
-          echo "Generated Version Tag: $VERSION_TAG" # for log purpose
-
-      # 6. Build the solution
+      # 5. Build Solution
       - name: Build Solution
         run: ${{ runner.temp }}/dotnet/dotnet build --configuration Debug --no-restore
 
-      # 7. Static Code Analysis
+      # 6. Static Code Analysis
       - name: Static Code Analysis
         run: ${{ runner.temp }}/dotnet/dotnet format --verify-no-changes
 
-      # 8. Run Unit Tests with Code Coverage
-      - name: Run Unit Tests with Code Coverage (XPlat)
-        continue-on-error: true
-        shell: bash
+      # 7. Run Unit Tests with Code Coverage
+      - name: Run Unit Tests with Code Coverage
         run: |
           mkdir -p TestResults
           ${{ runner.temp }}/dotnet/dotnet test --configuration Debug --no-build \
           --logger "trx;LogFileName=TestResults/test_results.trx" \
           --collect:"XPlat Code Coverage"
 
-      # 9. List TestResults directory
-      - name: List TestResults Directory
-        run: ls -la TestResults
-
-      # 10. Upload Test Report Artifact
+      # 8. Upload Test Report
       - name: Upload Test Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report-${{ env.VERSION_TAG }}
+          name: test-report-${{ github.sha }}
           path: '**/TestResults/test_results.trx'
 
-      # 11. Upload Code Coverage Artifact
+      # 🎯 9. SonarCloud Code Analysis Step
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.cs.opencover.reportsPaths=**/coverage.cobertura.xml
+
+      # 10. Upload Code Coverage Artifact
       - name: Upload Code Coverage Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: code-coverage-${{ env.VERSION_TAG }}
+          name: code-coverage-${{ github.sha }}
           path: '**/coverage*.xml'
 
-      # 12. Copy Build Output for Artifact
-      - name: Copy Build Output for Artifact
-        shell: bash
-        run: |
-          mkdir -p artifacts
-          cp -r **/bin/Debug/* artifacts/
-
-      # 13. Upload Build Artifacts
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts-${{ env.VERSION_TAG }}
-          path: artifacts/
-
-      # 14. Send Email Notification on Build Failure
+      # 11. Email Notification on Failure
       - name: Send Email Notification
         if: failure()
         uses: dawidd6/action-send-mail@v3
@@ -124,13 +98,11 @@ jobs:
           server_port: 587
           username: ${{ secrets.OUTLOOK_EMAIL }}
           password: ${{ secrets.OUTLOOK_PASSWORD }}
-          subject: "Build Failure: ${{ env.VERSION_TAG }}"
+          subject: "Build Failed: ${{ github.sha }}"
           to: ${{ secrets.OUTLOOK_EMAIL }}
           from: ${{ secrets.OUTLOOK_EMAIL }}
           body: |
             Build Failed on branch: ${{ github.ref }}
-            Commit Hash: ${{ github.sha }}
-            Please check the pipeline logs.
+            Commit: ${{ github.sha }}
+            Please check logs for more details.
           secure: true
-
-       
