@@ -33,9 +33,20 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore
 
+      # 👉 SonarCloud Analysis Start
+      - name: Install SonarCloud Scanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Start SonarCloud Analysis
+        run: dotnet-sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
 
+      - name: End SonarCloud Analysis
+        run: dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      # ☝️ SonarCloud Analysis End
+      
       - name: Run Unit Tests and Generate Test Report
         run: |
           mkdir -p TestResults
