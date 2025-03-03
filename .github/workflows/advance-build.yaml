@@ -1,10 +1,10 @@
 name: Advanced Build, Test & Artifact Pipeline
-
+ 
 on:
   push: 
     branches:
       - develop
-      - master 
+      - master
       - 'feature-*'
   pull_request:
     branches:
@@ -12,17 +12,17 @@ on:
       - 'feature-*'
   schedule:
     - cron: '30 11 * * 3,5' # Every Wednesday and Friday at 5 PM IST
-
+ 
 jobs:
   build-and-test:
     runs-on: self-hosted
-
+ 
     steps:
-      # 1. Checkout the repository code
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # For SonarQube Analysis
 
-      # 2. Cache NuGet Packages
       - name: Cache NuGet Packages
         uses: actions/cache@v3
         with:
@@ -31,7 +31,6 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}
 
-      # 3. Setup .NET SDK with Custom Install Directory
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
@@ -39,111 +38,36 @@ jobs:
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
 
-      # To verify the installed SDK version
-      - name: Verify .NET SDK
-        run: ${{ runner.temp }}/dotnet/dotnet --list-sdks
-
-      # 4. Restore project dependencies
       - name: Restore Dependencies
         run: ${{ runner.temp }}/dotnet/dotnet restore
 
-      # 5. Generate Version Tag
-      - name: Generate Version Tag
-        id: version
-        shell: bash
-        run: |
-          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          COMMIT_HASH=$(echo "${GITHUB_SHA}" | cut -c1-7)
-          if [[ "$BRANCH_NAME" == "develop" ]]; then
-            VERSION_TAG="develop-latest"
-          elif [[ "$BRANCH_NAME" == feature-* ]]; then
-            VERSION_TAG="$BRANCH_NAME-$COMMIT_HASH"
-          else
-            VERSION_TAG="release-$BRANCH_NAME-$COMMIT_HASH"
-          fi
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-          echo "Generated Version Tag: $VERSION_TAG"
-
-      # 6. Build the solution
       - name: Build Solution
         run: ${{ runner.temp }}/dotnet/dotnet build --configuration Debug --no-restore
 
-      # 7. Static Code Analysis
-      - name: Static Code Analysis
-        run: ${{ runner.temp }}/dotnet/dotnet format --verify-no-changes
+      # SonarQube Start Analysis
+      - name: Install SonarQube Scanner
+        run: dotnet tool install --global dotnet-sonarscanner
 
-      # 7.5 SonarCloud Static Code Analysis
-      - name: SonarCloud Analysis
-        uses: SonarSource/sonarcloud-github-action@master
+      - name: Start SonarQube Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.exclusions=**/bin/**,**/obj/**
-
-      # 8. Run Unit Tests with Code Coverage
-      - name: Run Unit Tests with Code Coverage (XPlat)
-        continue-on-error: true
-        shell: bash
         run: |
-          mkdir -p TestResults
-          ${{ runner.temp }}/dotnet/dotnet test --configuration Debug --no-build \
-          --logger "trx;LogFileName=TestResults/test_results.trx" \
-          --collect:"XPlat Code Coverage"
+          dotnet-sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
 
-      # 9. List TestResults directory
-      - name: List TestResults Directory
-        run: ls -la TestResults
+      - name: Build with SonarQube
+        run: ${{ runner.temp }}/dotnet/dotnet build --configuration Debug
 
-      # 10. Upload Test Report Artifact
-      - name: Upload Test Report Artifact
+      - name: End SonarQube Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Run Unit Tests
+        run: ${{ runner.temp }}/dotnet/dotnet test --configuration Debug --no-build --logger "trx"
+
+      - name: Upload Test Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report-${{ env.VERSION_TAG }}
-          path: '**/TestResults/test_results.trx'
-
-      # 11. Upload Code Coverage Artifact
-      - name: Upload Code Coverage Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-coverage-${{ env.VERSION_TAG }}
-          path: '**/coverage*.xml'
-
-      # 12. Copy Build Output for Artifact
-      - name: Copy Build Output for Artifact
-        shell: bash
-        run: |
-          mkdir -p artifacts
-          cp -r **/bin/Debug/* artifacts/
-
-      # 13. Upload Build Artifacts
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts-${{ env.VERSION_TAG }}
-          path: artifacts/
-
-      # 14. Send Email Notification on Build Failure
-      - name: Send Email Notification
-        if: failure()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.office365.com
-          server_port: 587
-          username: ${{ secrets.OUTLOOK_EMAIL }}
-          password: ${{ secrets.OUTLOOK_PASSWORD }}
-          subject: "Build Failure: ${{ env.VERSION_TAG }}"
-          to: ${{ secrets.OUTLOOK_EMAIL }}
-          from: ${{ secrets.OUTLOOK_EMAIL }}
-          body: |
-            Build Failed on branch: ${{ github.ref }}
-            Commit Hash: ${{ github.sha }}
-            Please check the pipeline logs.
-          secure: true
+          name: TestReports
+          path: '**/TestResults/*.trx'
