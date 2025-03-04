@@ -38,10 +38,10 @@ jobs:
       - name: Run Unit Tests and Generate Test Report
         run: |
           mkdir -p TestResults
-          dotnet test --configuration Debug --no-build
+          dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test-results.trx"
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
@@ -49,5 +49,6 @@ jobs:
           args: >
             -Dsonar.projectKey=kashishrastogi
             -Dsonar.organization=kashishrastogi
+            -Dsonar.branch.name=master
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.cs.vstest.reportsPaths=TestResults/*.trx
