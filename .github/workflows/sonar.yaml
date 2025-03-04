@@ -3,10 +3,10 @@ name: sonar task
 on:
   push: 
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
       
   schedule:
     - cron: '30 11 * * 3,5'  # Runs at 11:30 AM UTC (5:00 PM IST) on Wednesday & Friday
