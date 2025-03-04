@@ -1,16 +1,12 @@
-name: sonar task
+name: SonarQube
 
 on:
   push:  
     branches:
       - main
   pull_request:
-    branches:
-      - main
+    types: [opened, synchronize, reopened]
       
-  schedule:
-    - cron: '30 11 * * 3,5'  # Runs at 11:30 AM UTC (5:00 PM IST) on Wednesday & Friday
-
 jobs:
   build-and-test:
     runs-on: self-hosted
@@ -23,6 +19,7 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
+          fetch-depth: 0
         env:
           DOTNET_INSTALL_DIR: $HOME/.dotnet
 
@@ -40,15 +37,19 @@ jobs:
           mkdir -p TestResults
           dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test-results.trx"
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5.0.0
+      - name: Install SonarScanner
+        run: |
+          curl -sS https://downloads.sonarsource.com/sonarscanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip -o sonar-scanner.zip
+          unzip sonar-scanner.zip -d $HOME
+          export PATH=$PATH:$HOME/sonar-scanner-4.6.2.2472-linux/bin
+          echo "SonarScanner installed successfully"
+
+      - name: Build and analyze with SonarScanner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.projectKey=CI-PIPELINE
-            -Dsonar.organization=kashishrastogi
-            -Dsonar.branch.name=main
-            -Dsonar.host.url=https://sonarcloud.io
+        run: |
+          sonar-scanner -Dsonar.projectKey=kashishrastogi03_CI-PIPELINE \
+            -Dsonar.organization=kashishrastogi03 \
+            -Dsonar.token="${{ secrets.SONAR_TOKEN }}" \
+            -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.cs.vstest.reportsPaths=TestResults/*.trx
