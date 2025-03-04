@@ -1,12 +1,13 @@
 name: sonar task
 
 on:
-  push:
+  push:  
     branches:
       - main
   pull_request:
     branches:
       - main
+      
   schedule:
     - cron: '30 11 * * 3,5'  # Runs at 11:30 AM UTC (5:00 PM IST) on Wednesday & Friday
 
@@ -40,7 +41,7 @@ jobs:
           dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test-results.trx"
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v1  # Updated to the latest version
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
