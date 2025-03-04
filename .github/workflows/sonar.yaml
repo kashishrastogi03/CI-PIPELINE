@@ -31,21 +31,26 @@ jobs:
       - name: Build Project
         run: dotnet build --configuration Debug --no-restore
 
-      - name: Run Tests
-        run: dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test-results.trx"
+      - name: Run Tests with Coverage
+        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=TestResults/test-results.trx"
+
+      - name: Move Coverage Report
+        run: |
+          mkdir -p coverage
+          mv **/TestResults/**/coverage.cobertura.xml coverage/coverage.opencover.xml || echo "No coverage file found"
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
-         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-         projectBaseDir: .
-         args: >
-          -Dsonar.projectKey=kashishrastogi03_CI-PIPELINE
-          -Dsonar.organization=kashishrastogi03
-          -Dsonar.host.url=https://sonarcloud.io
-          -Dsonar.verbose=true
-          -Dsonar.c.file.suffixes=-
-          -Dsonar.cpp.file.suffixes=-
-          -Dsonar.objc.file.suffixes=-
-
+          projectBaseDir: .
+          args: >
+            -Dsonar.projectKey=kashishrastogi03_CI-PIPELINE
+            -Dsonar.organization=kashishrastogi03
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.verbose=true
+            -Dsonar.cs.opencover.reportsPaths=coverage/coverage.opencover.xml
+            -Dsonar.c.file.suffixes=-
+            -Dsonar.cpp.file.suffixes=-
+            -Dsonar.objc.file.suffixes=-
