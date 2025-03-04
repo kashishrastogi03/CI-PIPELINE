@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Cache NuGet Packages
         uses: actions/cache@v3
@@ -44,13 +44,12 @@ jobs:
 
       - name: Install SonarScanner
         run: |
-          dotnet tool update dotnet-sonarscanner --tool-path .
-          echo "$(pwd)" >> $GITHUB_PATH
-          chmod +x ./dotnet-sonarscanner
+          dotnet tool install --global dotnet-sonarscanner
+          echo "SONAR_SCANNER_INSTALLED=$(dotnet tool list -g | grep sonarscanner)" >> $GITHUB_ENV
 
       - name: Start SonarQube Analysis
         run: |
-          ./dotnet-sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.exclusions="**/Migrations/**,**/*.Generated.cs"
+          dotnet-sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vscoveragexml.reportsPaths="**/coverage.cobertura.xml" /d:sonar.exclusions="**/Migrations/**,**/*.Generated.cs" 
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -68,7 +67,6 @@ jobs:
             VERSION_TAG="release-$BRANCH_NAME-$COMMIT_HASH"
           fi
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-          echo "Generated Version Tag: $VERSION_TAG"
 
       - name: Build Solution
         run: ${{ runner.temp }}/dotnet/dotnet build --configuration Debug --no-restore
@@ -83,14 +81,15 @@ jobs:
           mkdir -p TestResults
           ${{ runner.temp }}/dotnet/dotnet test --configuration Debug --no-build \
           --logger "trx;LogFileName=TestResults/test_results.trx" \
-          --collect:"XPlat Code Coverage"
+          --collect:"XPlat Code Coverage" \
+          --results-directory TestResults
 
       - name: List TestResults Directory
         run: ls -la TestResults
 
       - name: End SonarQube Analysis
         run: |
-          ./dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -99,14 +98,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-report-${{ env.VERSION_TAG }}
-          path: '**/TestResults/test_results.trx'
+          path: TestResults/test_results.trx
 
       - name: Upload Code Coverage Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage-${{ env.VERSION_TAG }}
-          path: '**/coverage*.xml'
+          path: '**/TestResults/**/coverage.cobertura.xml'
 
       - name: Copy Build Output for Artifact
         shell: bash
@@ -120,19 +119,3 @@ jobs:
           name: build-artifacts-${{ env.VERSION_TAG }}
           path: artifacts/
 
-      - name: Send Email Notification
-        if: failure()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.office365.com
-          server_port: 587
-          username: ${{ secrets.OUTLOOK_EMAIL }}
-          password: ${{ secrets.OUTLOOK_PASSWORD }}
-          subject: "Build Failure: ${{ env.VERSION_TAG }}"
-          to: ${{ secrets.OUTLOOK_EMAIL }}
-          from: ${{ secrets.OUTLOOK_EMAIL }}
-          body: |
-            Build Failed on branch: ${{ github.ref }}
-            Commit Hash: ${{ github.sha }}
-            Please check the pipeline logs.
-          secure: true
