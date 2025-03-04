@@ -15,11 +15,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # SonarCloud needs full Git history
+          fetch-depth: 0
 
       - name: Setup .NET SDK
         run: |
-          # Install .NET SDK into your home directory to avoid sudo permissions
           curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
           echo "$HOME/.dotnet" >> $GITHUB_PATH
           echo "DOTNET_ROOT=$HOME/.dotnet" >> $GITHUB_ENV
@@ -33,10 +32,6 @@ jobs:
 
       - name: Restore Dependencies
         run: dotnet restore
-
-      - name: Begin SonarCloud Analysis
-        run: |
-          dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Build Project
         run: dotnet build --configuration Debug --no-restore
@@ -54,5 +49,8 @@ jobs:
             mv "$report" coverage/coverage.opencover.xml
           fi
 
+      - name: Begin SonarCloud Analysis
+        run: dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+
       - name: End SonarCloud Analysis
-        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.verbose=true /d:sonar.c.file.suffixes=- /d:sonar.cpp.file.suffixes=- /d:sonar.objc.file.suffixes=-
