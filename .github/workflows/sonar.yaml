@@ -47,7 +47,7 @@ jobs:
         with:
           projectBaseDir: .
           args: >
-            -Dsonar.projectKey=kashishrastogi
+            -Dsonar.projectKey=CI-PIPELINE
             -Dsonar.organization=kashishrastogi
             -Dsonar.branch.name=main
             -Dsonar.host.url=https://sonarcloud.io
