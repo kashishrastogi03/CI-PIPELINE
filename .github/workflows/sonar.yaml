@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Setup .NET SDK
         run: |
@@ -28,20 +28,30 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore
 
-      - name: Begin SonarCloud Analysis
-        run: |
-          dotnet tool install --global dotnet-sonarscanner
-          dotnet sonarscanner begin \
-            /k:"kashishrastogi03_CI-PIPELINE" \
-            /o:"kashishrastogi03" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
-
       - name: Build Project
         run: dotnet build --configuration Debug --no-restore
 
-      - name: Run Tests
-        run: dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test-results.trx"
+      - name: Run Tests & Generate Code Coverage
+        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage
 
-      - name: End SonarCloud Analysis
-        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+      - name: Prepare Coverage Report
+        run: |
+          mkdir -p coverage
+          report=$(find ./coverage -name "coverage.cobertura.xml" | head -n 1)
+          mv $report coverage/coverage.opencover.xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.projectKey=kashishrastogi03_CI-PIPELINE
+            -Dsonar.organization=kashishrastogi03
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.verbose=true
+            -Dsonar.cs.opencover.reportsPaths=coverage/coverage.opencover.xml
+            -Dsonar.c.file.suffixes=-
+            -Dsonar.cpp.file.suffixes=-
+            -Dsonar.objc.file.suffixes=-
