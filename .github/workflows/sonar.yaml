@@ -18,13 +18,12 @@ jobs:
           fetch-depth: 0 # SonarCloud needs full Git history
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-          install-dir: ${{ runner.temp }}/dotnet
-
-      - name: Add .NET to PATH
-        run: echo "${{ runner.temp }}/dotnet" >> $GITHUB_PATH
+        run: |
+          curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+          echo "$HOME/.dotnet" >> $GITHUB_PATH
+          echo "DOTNET_ROOT=$HOME/.dotnet" >> $GITHUB_ENV
+          export DOTNET_ROOT=$HOME/.dotnet
+          export PATH=$HOME/.dotnet:$PATH
 
       - name: Restore Dependencies
         run: dotnet restore
@@ -38,7 +37,7 @@ jobs:
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Add your SonarCloud token in GitHub Secrets
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           projectBaseDir: .
           args: >
