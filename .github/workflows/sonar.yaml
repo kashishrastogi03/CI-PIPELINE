@@ -49,6 +49,6 @@ jobs:
           args: >
             -Dsonar.projectKey=kashishrastogi
             -Dsonar.organization=kashishrastogi
-            -Dsonar.branch.name=master
+            -Dsonar.branch.name=main
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.cs.vstest.reportsPaths=TestResults/*.trx
