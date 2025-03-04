@@ -1,55 +1,44 @@
-name: SonarQube
+name: SonarCloud
 
 on:
-  push:  
+  push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
-      
+
 jobs:
-  build-and-test:
-    runs-on: self-hosted
+  sonarcloud:
+    runs-on: self-hosted  # Your CentOS Hosted Agent
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # SonarCloud needs full Git history
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
-          fetch-depth: 0
-        env:
-          DOTNET_INSTALL_DIR: $HOME/.dotnet
-
-      - name: Add .NET to PATH
-        run: echo "$HOME/.dotnet:$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Restore Dependencies
         run: dotnet restore
 
-      - name: Build Solution
+      - name: Build Project
         run: dotnet build --configuration Debug --no-restore
 
-      - name: Run Unit Tests and Generate Test Report
-        run: |
-          mkdir -p TestResults
-          dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test-results.trx"
+      - name: Run Tests
+        run: dotnet test --configuration Debug --no-build --logger "trx;LogFileName=TestResults/test-results.trx"
 
-      - name: Install SonarScanner
-        run: |
-         curl -sS https://github.com/SonarSource/sonar-scanner-cli/releases/download/4.6.2.2472/sonar-scanner-cli-4.6.2.2472-linux.zip -o sonar-scanner.zip
-         unzip sonar-scanner.zip -d $HOME
-         export PATH=$PATH:$HOME/sonar-scanner-4.6.2.2472-linux/bin
-         echo "SonarScanner installed successfully"
-
-      - name: Build and analyze with SonarScanner
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          sonar-scanner -Dsonar.projectKey=kashishrastogi03_CI-PIPELINE \
-            -Dsonar.organization=kashishrastogi03 \
-            -Dsonar.token="${{ secrets.SONAR_TOKEN }}" \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.cs.vstest.reportsPaths=TestResults/*.trx
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Set this in GitHub Secrets
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.projectKey=kashishrastogi03_CI-PIPELINE
+            -Dsonar.organization=kashishrastogi03
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.verbose=true
