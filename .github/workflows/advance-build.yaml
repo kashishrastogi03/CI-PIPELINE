@@ -44,12 +44,13 @@ jobs:
 
       - name: Install SonarScanner
         run: |
-          dotnet tool install --global dotnet-sonarscanner
-          echo "SONAR_SCANNER_INSTALLED=$(dotnet tool list -g | grep sonarscanner)" >> $GITHUB_ENV
+          dotnet tool update dotnet-sonarscanner --tool-path ${{ runner.temp }}/.sonar
+          echo "${{ runner.temp }}/.sonar" >> $GITHUB_PATH
+          chmod +x ${{ runner.temp }}/.sonar/dotnet-sonarscanner
 
       - name: Start SonarQube Analysis
         run: |
-          dotnet-sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vscoveragexml.reportsPaths="**/coverage.cobertura.xml" /d:sonar.exclusions="**/Migrations/**,**/*.Generated.cs" 
+          dotnet-sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vscoveragexml.reportsPaths="**/coverage.cobertura.xml" /d:sonar.exclusions="**/Migrations/**,**/*.Generated.cs"
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
