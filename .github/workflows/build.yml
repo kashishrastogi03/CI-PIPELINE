@@ -1,5 +1,5 @@
 name: CI Build, Test & Artifact Upload
-
+ 
 on:
   push:
     branches:
@@ -11,49 +11,49 @@ on:
       - 'feature-*'
   schedule:
     - cron: '30 11 * * 3,5'  # Runs at 11:30 AM UTC (5:00 PM IST) on Wednesday & Friday
-
+ 
 jobs:
   build-and-test:
     runs-on: self-hosted
-
+ 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
-
+ 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
         env:
           DOTNET_INSTALL_DIR: $HOME/.dotnet
-
+ 
       - name: Add .NET to PATH
         run: echo "$HOME/.dotnet:$HOME/.dotnet/tools" >> $GITHUB_PATH
-
+ 
       - name: Restore Dependencies
         run: dotnet restore
-
+ 
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
-
+ 
       - name: Run Unit Tests and Generate Test Report
         run: |
           mkdir -p TestResults
           dotnet test --configuration Debug --no-build \
             --logger "trx;LogFileName=TestResults/test_results.trx"
-
+ 
       - name: Upload Test Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-report-${{ github.sha }}
           path: TestResults/test_results.trx
-
+ 
       - name: Copy Build Output for Artifact
         run: |
           mkdir -p artifacts
           cp -r **/bin/Debug/* artifacts/
-
+ 
       - name: Upload Build Artifacts
         if: always()
         uses: actions/upload-artifact@v4
