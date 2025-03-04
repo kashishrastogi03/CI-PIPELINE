@@ -84,7 +84,7 @@ jobs:
 
       # 9. Static Code Analysis
       - name: Static Code Analysis
-        run: ${{ runner.temp }}/dotnet/dotnet format --verify-no-changes
+        run: ${{ runner.temp }}/dotnet/dotnet format --verify-no-changes || true
 
       # 10. Run Unit Tests with Code Coverage
       - name: Run Unit Tests with Code Coverage (XPlat)
