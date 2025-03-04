@@ -39,10 +39,10 @@ jobs:
 
       - name: Install SonarScanner
         run: |
-          curl -sS https://downloads.sonarsource.com/sonarscanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip -o sonar-scanner.zip
-          unzip sonar-scanner.zip -d $HOME
-          export PATH=$PATH:$HOME/sonar-scanner-4.6.2.2472-linux/bin
-          echo "SonarScanner installed successfully"
+         curl -sS https://github.com/SonarSource/sonar-scanner-cli/releases/download/4.6.2.2472/sonar-scanner-cli-4.6.2.2472-linux.zip -o sonar-scanner.zip
+         unzip sonar-scanner.zip -d $HOME
+         export PATH=$PATH:$HOME/sonar-scanner-4.6.2.2472-linux/bin
+         echo "SonarScanner installed successfully"
 
       - name: Build and analyze with SonarScanner
         env:
