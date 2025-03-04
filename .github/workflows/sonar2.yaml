@@ -1,4 +1,4 @@
-name: SonarCloud Analysis with Dotnet SonarScanner
+name: SonarCloud
 
 on:
   push:
@@ -15,36 +15,44 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # SonarCloud needs full Git history
 
       - name: Setup .NET SDK
         run: |
+          # Install .NET SDK into your home directory to avoid sudo permissions
           curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
           echo "$HOME/.dotnet" >> $GITHUB_PATH
           echo "DOTNET_ROOT=$HOME/.dotnet" >> $GITHUB_ENV
           export DOTNET_ROOT=$HOME/.dotnet
           export PATH=$HOME/.dotnet:$PATH
 
+      - name: Install Dotnet SonarScanner
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
       - name: Restore Dependencies
         run: dotnet restore
 
-      - name: Install Dotnet SonarScanner
-        run: dotnet tool install --global dotnet-sonarscanner
-
       - name: Begin SonarCloud Analysis
-        run: dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+        run: |
+          dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Build Project
         run: dotnet build --configuration Debug --no-restore
 
       - name: Run Tests & Generate Code Coverage
-        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=TestResults/test-results.trx"
+        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Prepare Coverage Report
         run: |
           mkdir -p coverage
           report=$(find ./coverage -name "coverage.cobertura.xml" | head -n 1)
-          mv $report coverage/coverage.opencover.xml
+          if [ -z "$report" ]; then
+            echo "No coverage report found. Please ensure tests generate a coverage report."
+          else
+            mv "$report" coverage/coverage.opencover.xml
+          fi
 
       - name: End SonarCloud Analysis
         run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
