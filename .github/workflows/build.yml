@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-report-${{ github.sha }}
-          path: TestResults/test_results.trx
+          path: TestResults/test_results.trx 
  
       - name: Copy Build Output for Artifact
         run: |
