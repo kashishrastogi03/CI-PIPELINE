@@ -53,7 +53,7 @@ jobs:
           if [ -z "$report" ]; then
             echo "No coverage report found."
             exit 1
-          else
+          else 
             mv "$report" coverage/coverage.opencover.xml
           fi
         working-directory: ${{ github.workspace }}
