@@ -9,7 +9,7 @@ on:
 
 jobs:
   sonarcloud:
-    runs-on: self-hosted  # Your CentOS Hosted Agent
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Code
@@ -30,27 +30,34 @@ jobs:
           dotnet tool install --global dotnet-sonarscanner
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
+      - name: Begin SonarCloud Analysis
+        run: dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.verbose=true
+        working-directory: ${{ github.workspace }}
+
       - name: Restore Dependencies
         run: dotnet restore
+        working-directory: ${{ github.workspace }}
 
       - name: Build Project
         run: dotnet build --configuration Debug --no-restore
+        working-directory: ${{ github.workspace }}
 
-      - name: Run Tests & Generate Code Coverage
-        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+      - name: Run Tests & Generate Coverage
+        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage
+        working-directory: ${{ github.workspace }}
 
       - name: Prepare Coverage Report
         run: |
           mkdir -p coverage
           report=$(find ./coverage -name "coverage.cobertura.xml" | head -n 1)
           if [ -z "$report" ]; then
-            echo "No coverage report found. Please ensure tests generate a coverage report."
+            echo "No coverage report found."
+            exit 1
           else
-            mv "$report" coverage/coverage.cobertura.xml
+            mv "$report" coverage/coverage.opencover.xml
           fi
-
-      - name: Begin SonarCloud Analysis
-        run: dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.verbose=true /d:sonar.coverageReportPaths=coverage/coverage.cobertura.xml
+        working-directory: ${{ github.workspace }}
 
       - name: End SonarCloud Analysis
         run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+        working-directory: ${{ github.workspace }}
