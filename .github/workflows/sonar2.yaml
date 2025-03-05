@@ -32,15 +32,15 @@ jobs:
         run: dotnet build --configuration Debug --no-restore
 
       - name: Run Tests & Generate Code Coverage
-        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura --results-directory ./coverage
+        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura --results-directory ./TestResults
 
       - name: List Coverage Files 🔍
-        run: ls -R ./coverage
+        run: ls -R ./TestResults
 
       - name: Prepare Coverage Report
         run: |
           mkdir -p coverage
-          report=$(find ./coverage -name "coverage.cobertura.xml" | head -n 1)
+          report=$(find ./TestResults -name "coverage.cobertura.xml" | head -n 1)
           echo "Coverage Report Path: $report"
           mv $report coverage/coverage.opencover.xml
 
