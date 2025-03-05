@@ -32,16 +32,12 @@ jobs:
         run: dotnet build --configuration Debug --no-restore
 
       - name: Run Tests & Generate Code Coverage
-        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura --results-directory ./TestResults
-
-      - name: List Coverage Files 🔍
-        run: ls -R ./TestResults
+        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Prepare Coverage Report
         run: |
           mkdir -p coverage
-          report=$(find ./TestResults -name "coverage.cobertura.xml" | head -n 1)
-          echo "Coverage Report Path: $report"
+          report=$(find ./coverage -name "coverage.cobertura.xml" | head -n 1)
           mv $report coverage/coverage.opencover.xml
 
       - name: SonarCloud Scan
@@ -55,8 +51,9 @@ jobs:
             -Dsonar.organization=kashishrastogi03
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.verbose=true
+            -Dsonar.language=cs
             -Dsonar.sonarScannerMode=MSBuild
-            -Dsonar.cs.cobertura.reportsPaths=coverage/coverage.opencover.xml
+            -Dsonar.cs.opencover.reportsPaths=coverage/coverage.opencover.xml
             -Dsonar.c.file.suffixes=-
             -Dsonar.cpp.file.suffixes=-
             -Dsonar.objc.file.suffixes=-
