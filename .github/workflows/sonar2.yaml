@@ -9,7 +9,7 @@ on:
 
 jobs:
   sonarcloud:
-    runs-on: self-hosted  # Your CentOS Hosted Agent
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Code
@@ -25,11 +25,6 @@ jobs:
           export DOTNET_ROOT=$HOME/.dotnet
           export PATH=$HOME/.dotnet:$PATH
 
-      - name: Install Dotnet SonarScanner
-        run: |
-          dotnet tool install --global dotnet-sonarscanner
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
-
       - name: Restore Dependencies
         run: dotnet restore
 
@@ -43,14 +38,20 @@ jobs:
         run: |
           mkdir -p coverage
           report=$(find ./coverage -name "coverage.cobertura.xml" | head -n 1)
-          if [ -z "$report" ]; then
-            echo "No coverage report found. Please ensure tests generate a coverage report."
-          else
-            mv "$report" coverage/coverage.opencover.xml
-          fi
+          mv $report coverage/coverage.opencover.xml
 
-      - name: Begin SonarCloud Analysis
-        run: dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.verbose=true /d:sonar.c.file.suffixes=- /d:sonar.cpp.file.suffixes=- /d:sonar.objc.file.suffixes=-
-
-      - name: End SonarCloud Analysis
-        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.projectKey=kashishrastogi03_CI-PIPELINE
+            -Dsonar.organization=kashishrastogi03
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.verbose=true
+            -Dsonar.cs.opencover.reportsPaths=coverage/coverage.opencover.xml
+            -Dsonar.c.file.suffixes=-
+            -Dsonar.cpp.file.suffixes=-
+            -Dsonar.objc.file.suffixes=-
