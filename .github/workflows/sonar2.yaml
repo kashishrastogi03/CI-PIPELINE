@@ -31,7 +31,7 @@ jobs:
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Begin SonarCloud Analysis
-        run: dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.verbose=true
+        run: dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.verbose=true /d:sonar.c.file.suffixes=- /d:sonar.cpp.file.suffixes=- /d:sonar.objc.file.suffixes=-
         working-directory: ${{ github.workspace }}
 
       - name: Restore Dependencies
