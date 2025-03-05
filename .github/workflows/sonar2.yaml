@@ -8,49 +8,48 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sonarcloud:
-    runs-on: self-hosted  # Your CentOS Hosted Agent
+  sonar:
+    name: SonarCloud Analysis
+    runs-on: self-hosted
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup .NET SDK
-        run: |
-          curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
-          echo "$HOME/.dotnet" >> $GITHUB_PATH
-          echo "DOTNET_ROOT=$HOME/.dotnet" >> $GITHUB_ENV
-          export DOTNET_ROOT=$HOME/.dotnet
-          export PATH=$HOME/.dotnet:$PATH
-
-      - name: Install Dotnet SonarScanner
-        run: |
-          dotnet tool install --global dotnet-sonarscanner
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Restore Dependencies
         run: dotnet restore
 
-      - name: Build Project
-        run: dotnet build --configuration Debug --no-restore
+      - name: Cache SonarCloud Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
 
-      - name: Run Tests & Generate Code Coverage
-        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage
+      - name: Cache SonarCloud Scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v4
+        with:
+          path: ./.sonar/scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
 
-      - name: Prepare Coverage Report
+      - name: Install SonarCloud Scanner
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
         run: |
-          mkdir -p coverage
-          report=$(find ./coverage -name "coverage.cobertura.xml" | head -n 1)
-          if [ -z "$report" ]; then
-            echo "No coverage report found. Please ensure tests generate a coverage report."
-          else
-            mv "$report" coverage/coverage.opencover.xml
-          fi
+          mkdir -p ./.sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
 
-      - name: Begin SonarCloud Analysis
-        run: dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.verbose=true /d:sonar.c.file.suffixes=- /d:sonar.cpp.file.suffixes=- /d:sonar.objc.file.suffixes=-
+      - name: Download Coverage Report
+        uses: actions/download-artifact@v4
+        with:
+          name: code-coverage-${{ env.VERSION_TAG }}
+          path: TestResults/**/coverage.cobertura.xml
 
-      - name: End SonarCloud Analysis
-        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+      - name: Run SonarCloud Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./.sonar/scanner/dotnet-sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.coverageReportPaths="TestResults/**/coverage.cobertura.xml"
+          dotnet build --configuration Debug --no-restore
+          ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
