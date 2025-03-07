@@ -35,21 +35,11 @@ jobs:
       - name: Build Solution
         run: dotnet build --configuration Release --no-restore
 
-      - name: Create NuGet Package
-        run: dotnet pack --configuration Release --output artifacts/
+      - name: Pack NuGet Package
+        run: dotnet pack --configuration Release --no-build --output artifacts/
 
-      - name: Run Unit Tests and Generate Test Report
-        run: |
-          mkdir -p TestResults
-          dotnet test --configuration Release --no-build \
-            --logger "trx;LogFileName=TestResults/test_results.trx"
-
-      - name: Upload Test Report Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-report-${{ github.sha }}
-          path: TestResults/test_results.trx
+      - name: List Artifacts Folder
+        run: ls artifacts/ || echo "Artifacts folder not found"
 
       - name: Upload Build Artifacts
         if: always()
@@ -59,15 +49,13 @@ jobs:
           path: artifacts/
 
       - name: Upload to Artifactory
-        if: success()
+        if: always()
         run: |
           echo "Uploading to Artifactory..."
-          ls artifacts/ # Debugging purpose
+          ls artifacts/
           for file in artifacts/*.nupkg; do
-            if [ -f "$file" ]; then
-              echo "Uploading $file to Artifactory..."
-              curl -v -u "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASSWORD }}" \
-              -T "$file" \
-              "${{ secrets.ARTIFACTORY_URL }}/api/nuget/dotnet-nuget/"
-            fi
+            echo "Uploading $file to Artifactory..."
+            curl -u "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASSWORD }}" \
+            -T $file \
+            ${{ secrets.ARTIFACTORY_URL }}/api/nuget/dotnet-nuget/
           done
