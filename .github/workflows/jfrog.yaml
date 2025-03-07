@@ -1,10 +1,9 @@
 name: CI Build, Test & Artifact Upload
- 
+
 on:
   push:
     branches:
-      - main 
-
+      - main
   pull_request:
     branches:
       - develop
@@ -13,27 +12,27 @@ on:
 jobs:
   build-and-test:
     runs-on: self-hosted
- 
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
- 
+
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
         env:
           DOTNET_INSTALL_DIR: $HOME/.dotnet
- 
+
       - name: Add .NET to PATH
         run: echo "$HOME/.dotnet:$HOME/.dotnet/tools" >> $GITHUB_PATH
- 
+
       - name: Restore Dependencies
         run: dotnet restore
- 
+
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
- 
+
       - name: Run Unit Tests and Generate Test Report
         run: |
           mkdir -p TestResults
@@ -59,21 +58,14 @@ jobs:
           name: build-artifacts-${{ github.sha }}
           path: artifacts/
 
-      - name: Install NuGet CLI
+      - name: Install JFrog CLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y nuget
+          curl -fL https://getcli.jfrog.io | sh
 
-      - name: Configure Artifactory Source
+      - name: Authenticate JFrog CLI
         run: |
-          nuget sources add -Name Artifactory -Source https://trial2t885z.jfrog.io/artifactory/api/nuget/v3/dotnet-nuget \
-          -username ${{ secrets.ARTIFACTORY_USERNAME }} \
-          -password ${{ secrets.ARTIFACTORY_APIKEY }}
+          jfrog rt c --url https://trial2t885z.jfrog.io/artifactory --apikey ${{ secrets.ARTIFACTORY_PASSWORD }} --interactive=false
 
-      - name: Authenticate API Key
+      - name: Push Build Artifacts to Artifactory
         run: |
-          nuget setapikey ${{ secrets.ARTIFACTORY_APIKEY }} -Source Artifactory
-
-      - name: Push Package
-        run: |
-          nuget push **/*.nupkg -Source Artifactory -ApiKey ${{ secrets.ARTIFACTORY_APIKEY }}
+          jfrog rt u "artifacts/*" "dotnet-nuget/${{ github.sha }}/" --flat=false --build-name="dotnet-build" --build-number="${{ github.run_number }}"
