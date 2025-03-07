@@ -52,11 +52,11 @@ jobs:
 
       - name: Authenticate JFrog CLI
         run: |
-          jfrog config add my-artifactory-11 --artifactory-url https://trial2t885z.jfrog.io/artifactory --access-token "${{ secrets.ARTIFACTORY_PASSWORD }}" --interactive=false
+          jfrog config add my-artifactory-12 --artifactory-url https://trial2t885z.jfrog.io/artifactory --access-token "${{ secrets.ARTIFACTORY_PASSWORD }}" --interactive=false
           echo "Checking JFrog connection..."
           jfrog rt ping || echo "JFrog connection failed"
           echo "Verifying token..."
-          jfrog config show my-artifactory-11
+          jfrog config show my-artifactory-12
 
       - name: Push Build Artifacts to Artifactory
         run: |
