@@ -52,7 +52,7 @@ jobs:
 
       - name: Authenticate JFrog CLI with Username & Password
         run: |
-          jfrog config add my-artifactory-16 \
+          jfrog config add my-artifactory-17 \
             --artifactory-url https://trial2t885z.jfrog.io/artifactory \
             --user "${{ secrets.ARTIFACTORY_USER }}" \
             --password "${{ secrets.ARTIFACT_PASSWORD }}" \
@@ -61,7 +61,7 @@ jobs:
           echo "Checking JFrog connection..."
           jfrog rt ping || echo "JFrog connection failed"
           echo "Verifying Credentials..."
-          jfrog config show my-artifactory-16
+          jfrog config show my-artifactory-17
 
       - name: Push Build Artifacts to Artifactory
         run: |
