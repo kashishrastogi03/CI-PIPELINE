@@ -65,7 +65,7 @@ jobs:
 
       - name: Authenticate JFrog CLI
         run: |
-          jfrog config add my-artifactory-2 --artifactory-url https://trial2t885z.jfrog.io/artifactory --apikey ${{ secrets.ARTIFACTORY_PASSWORD }} --user ${{ secrets.ARTIFACTORY_USER }} --interactive=false
+          jfrog config add my-artifactory-3 --artifactory-url https://trial2t885z.jfrog.io/artifactory --apikey ${{ secrets.ARTIFACTORY_PASSWORD }} --user ${{ secrets.ARTIFACTORY_USER }} --interactive=false
 
       - name: Push Build Artifacts to Artifactory
         run: |
