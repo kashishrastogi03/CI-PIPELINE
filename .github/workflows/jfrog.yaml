@@ -33,13 +33,30 @@ jobs:
         run: dotnet restore
 
       - name: Build Solution
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --configuration Debug --no-restore
 
-      - name: Pack NuGet Package
-        run: dotnet pack --configuration Release --no-build --output artifacts/
+      - name: Run Unit Tests and Generate Test Report
+        run: |
+          mkdir -p TestResults
+          dotnet test --configuration Debug --no-build \
+            --logger "trx;LogFileName=TestResults/test_results.trx"
 
-      - name: List Artifacts Folder
-        run: ls artifacts/ || echo "Artifacts folder not found"
+      - name: Upload Test Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ github.sha }}
+          path: TestResults/test_results.trx
+
+      - name: Pack NuGet Package (Without Changing .csproj)
+        run: |
+          mkdir -p artifacts
+          dotnet pack --configuration Debug --output artifacts/
+
+      - name: Verify Artifacts
+        run: |
+          echo "Checking Artifacts Folder..."
+          ls artifacts/ || echo "Artifacts folder not found"
 
       - name: Upload Build Artifacts
         if: always()
@@ -52,10 +69,14 @@ jobs:
         if: always()
         run: |
           echo "Uploading to Artifactory..."
-          ls artifacts/
-          for file in artifacts/*.nupkg; do
-            echo "Uploading $file to Artifactory..."
-            curl -u "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASSWORD }}" \
-            -T $file \
-            ${{ secrets.ARTIFACTORY_URL }}/api/nuget/dotnet-nuget/
-          done
+          if [ "$(ls -A artifacts/)" ]; then
+            for file in artifacts/*.nupkg; do
+              echo "Uploading $file..."
+              curl -u "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASSWORD }}" \
+              -T $file \
+              ${{ secrets.ARTIFACTORY_URL }}/api/nuget/dotnet-nuget/
+            done
+          else
+            echo "No NuGet packages found!"
+            exit 1
+          fi
