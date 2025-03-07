@@ -45,18 +45,23 @@ jobs:
           name: build-artifacts-${{ github.sha }}
           path: artifacts/
 
-      - name: Install JFrog CLI (explicit installation)
+      - name: Install JFrog CLI
         run: |
           curl -fL https://getcli.jfrog.io | sh
           sudo mv jfrog /usr/local/bin/jfrog
 
+      - name: Decode Base64 Token
+        run: |
+          echo "${{ secrets.ARTIFACTORY_PASSWORD }}" | base64 -d > decoded_token.txt
+
       - name: Authenticate JFrog CLI
         run: |
-          echo "${{ secrets.ARTIFACTORY_PASSWORD }}" | tr -d '\n' | jfrog config add my-artifactory-14 --artifactory-url https://trial2t885z.jfrog.io/artifactory --access-token - --interactive=false
+          token=$(cat decoded_token.txt)
+          jfrog config add my-artifactory-15 --artifactory-url https://trial2t885z.jfrog.io/artifactory --access-token $token --interactive=false
           echo "Checking JFrog connection..."
           jfrog rt ping || echo "JFrog connection failed"
           echo "Verifying token..."
-          jfrog config show my-artifactory-14
+          jfrog config show my-artifactory-15
 
       - name: Push Build Artifacts to Artifactory
         run: |
