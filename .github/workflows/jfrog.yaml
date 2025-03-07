@@ -63,13 +63,24 @@ jobs:
           curl -fL https://getcli.jfrog.io | sh
           sudo mv jfrog /usr/local/bin/jfrog
 
+      - name: Debug Token
+        run: |
+          echo "Token Length: ${#${{ secrets.ARTIFACTORY_PASSWORD }}}"
+          echo "Artifactory URL: https://trial2t885z.jfrog.io/artifactory"
+
       - name: Authenticate JFrog CLI
         run: |
-          jfrog config add my-artifactory-9 --artifactory-url https://trial2t885z.jfrog.io/artifactory --access-token ${{ secrets.ARTIFACTORY_PASSWORD }} --interactive=false
+          jfrog config add my-artifactory-10 --artifactory-url https://trial2t885z.jfrog.io/artifactory --access-token ${{ secrets.ARTIFACTORY_PASSWORD }} --interactive=false
           echo "Checking JFrog connection..."
           jfrog rt ping || echo "JFrog connection failed"
           echo "Verifying token..."
-          jfrog config show my-artifactory-9
+          jfrog config show my-artifactory-10
+
+      - name: Test JFrog Connection
+        run: jfrog rt ping --server-id=my-artifactory-10
+
+      - name: Decode Token
+        run: echo "${{ secrets.ARTIFACTORY_PASSWORD }}" | base64 --decode
 
       - name: Push Build Artifacts to Artifactory
         run: |
