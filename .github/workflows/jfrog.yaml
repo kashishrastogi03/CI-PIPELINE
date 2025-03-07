@@ -1,23 +1,24 @@
-name: CI Build, Test & Upload to Artifactory
+name: CI Build, Test & Artifact Upload
 
 on:
   push:
     branches:
-      - main
+      - develop
+      - 'feature-*'
   pull_request:
     branches:
       - develop
       - 'feature-*'
   schedule:
-    - cron: '30 11 * * 3,5' # Every Wednesday & Friday 5:00 PM IST
+    - cron: '30 11 * * 3,5'  # Runs at 11:30 AM UTC (5:00 PM IST) on Wednesday & Friday
 
 jobs:
-  build-and-upload:
+  build-and-test:
     runs-on: self-hosted
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
@@ -48,15 +49,10 @@ jobs:
           name: test-report-${{ github.sha }}
           path: TestResults/test_results.trx
 
-      - name: Pack NuGet Package (Without Changing .csproj)
+      - name: Copy Build Output for Artifact
         run: |
           mkdir -p artifacts
-          dotnet pack --configuration Debug --output artifacts/
-
-      - name: Verify Artifacts
-        run: |
-          echo "Checking Artifacts Folder..."
-          ls artifacts/ || echo "Artifacts folder not found"
+          cp -r **/bin/Debug/* artifacts/
 
       - name: Upload Build Artifacts
         if: always()
@@ -65,18 +61,18 @@ jobs:
           name: build-artifacts-${{ github.sha }}
           path: artifacts/
 
-      - name: Upload to Artifactory
+      - name: Upload to Artifactory 🔥
         if: always()
         run: |
           echo "Uploading to Artifactory..."
           if [ "$(ls -A artifacts/)" ]; then
             for file in artifacts/*.nupkg; do
-              echo "Uploading $file..."
+              echo "Uploading $file to Artifactory..."
               curl -u "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASSWORD }}" \
-              -T $file \
+              -T "$file" \
               ${{ secrets.ARTIFACTORY_URL }}/api/nuget/dotnet-nuget/
             done
           else
-            echo "No NuGet packages found!"
+            echo "No artifacts found to upload."
             exit 1
           fi
