@@ -1,68 +1,31 @@
-name: CI Build, Test & Artifact Upload
- 
+name: Deploy NuGet Package
+
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - develop
-      - 'feature-*'
-  schedule:
-    - cron: '30 11 * * 3,5'  # Runs at 11:30 AM UTC (5:00 PM IST) on Wednesday & Friday
- 
+
 jobs:
-  build-and-test:
-    runs-on: self-hosted
- 
+  deploy:
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
- 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-        env:
-          DOTNET_INSTALL_DIR: $HOME/.dotnet
- 
-      - name: Add .NET to PATH
-        run: echo "$HOME/.dotnet:$HOME/.dotnet/tools" >> $GITHUB_PATH
- 
-      - name: Restore Dependencies
-        run: dotnet restore
- 
-      - name: Build Solution
-        run: dotnet build --configuration Debug --no-restore
- 
-      - name: Pack NuGet Package
-        run: dotnet pack --configuration Debug --no-build --output artifacts/
- 
-      - name: Run Unit Tests and Generate Test Report
-        run: |
-          mkdir -p TestResults
-          dotnet test --configuration Debug --no-build \
-            --logger "trx;LogFileName=TestResults/test_results.trx"
- 
-      - name: Upload Test Report Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-report-${{ github.sha }}
-          path: TestResults/test_results.trx
- 
-      - name: Upload Build Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts-${{ github.sha }}
-          path: artifacts/
- 
-      - name: Upload to Artifactory
-        if: always()
-        run: |
-          echo "Uploading to Artifactory..."
-          ls -la artifacts/
-          curl -u "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASSWORD }}" \
-          -T artifacts/*.nupkg \
-          ${{ secrets.ARTIFACTORY_URL }}/api/nuget/dotnet-nuget/
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Install NuGet CLI
+      run: sudo apt-get install nuget
+
+    - name: Configure Artifactory Source
+      run: |
+        nuget sources Add -Name Artifactory -Source https://trial2t885z.jfrog.io/artifactory/api/nuget/v3/dotnet-nuget \
+        -username ${{ secrets.ARTIFACTORY_USERNAME }} \
+        -password ${{ secrets.ARTIFACTORY_APIKEY }}
+
+    - name: Authenticate API Key
+      run: |
+        nuget setapikey ${{ secrets.ARTIFACTORY_USERNAME }}:${{ secrets.ARTIFACTORY_APIKEY }} -Source Artifactory
+
+    - name: Push Package
+      run: |
+        nuget push **/*.nupkg -Source Artifactory -ApiKey ${{ secrets.ARTIFACTORY_USERNAME }}:${{ secrets.ARTIFACTORY_APIKEY }}
