@@ -1,31 +1,79 @@
-name: Deploy NuGet Package
-
+name: CI Build, Test & Artifact Upload
+ 
 on:
   push:
     branches:
-      - main
+      - main 
+
+  pull_request:
+    branches:
+      - develop
+      - 'feature-*'
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
+  build-and-test:
+    runs-on: self-hosted
+ 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v2
+ 
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+        env:
+          DOTNET_INSTALL_DIR: $HOME/.dotnet
+ 
+      - name: Add .NET to PATH
+        run: echo "$HOME/.dotnet:$HOME/.dotnet/tools" >> $GITHUB_PATH
+ 
+      - name: Restore Dependencies
+        run: dotnet restore
+ 
+      - name: Build Solution
+        run: dotnet build --configuration Debug --no-restore
+ 
+      - name: Run Unit Tests and Generate Test Report
+        run: |
+          mkdir -p TestResults
+          dotnet test --configuration Debug --no-build \
+            --logger "trx;LogFileName=TestResults/test_results.trx"
 
-    - name: Install NuGet CLI
-      run: sudo apt-get install nuget
+      - name: Upload Test Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ github.sha }}
+          path: TestResults/test_results.trx
 
-    - name: Configure Artifactory Source
-      run: |
-        nuget sources Add -Name Artifactory -Source https://trial2t885z.jfrog.io/artifactory/api/nuget/v3/dotnet-nuget \
-        -username ${{ secrets.ARTIFACTORY_USERNAME }} \
-        -password ${{ secrets.ARTIFACTORY_APIKEY }}
+      - name: Copy Build Output for Artifact
+        run: |
+          mkdir -p artifacts
+          cp -r **/bin/Debug/* artifacts/
 
-    - name: Authenticate API Key
-      run: |
-        nuget setapikey ${{ secrets.ARTIFACTORY_USERNAME }}:${{ secrets.ARTIFACTORY_APIKEY }} -Source Artifactory
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: artifacts/
 
-    - name: Push Package
-      run: |
-        nuget push **/*.nupkg -Source Artifactory -ApiKey ${{ secrets.ARTIFACTORY_USERNAME }}:${{ secrets.ARTIFACTORY_APIKEY }}
+      - name: Install NuGet CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nuget
+
+      - name: Configure Artifactory Source
+        run: |
+          nuget sources add -Name Artifactory -Source https://trial2t885z.jfrog.io/artifactory/api/nuget/v3/dotnet-nuget \
+          -username ${{ secrets.ARTIFACTORY_USERNAME }} \
+          -password ${{ secrets.ARTIFACTORY_APIKEY }}
+
+      - name: Authenticate API Key
+        run: |
+          nuget setapikey ${{ secrets.ARTIFACTORY_APIKEY }} -Source Artifactory
+
+      - name: Push Package
+        run: |
+          nuget push **/*.nupkg -Source Artifactory -ApiKey ${{ secrets.ARTIFACTORY_APIKEY }}
