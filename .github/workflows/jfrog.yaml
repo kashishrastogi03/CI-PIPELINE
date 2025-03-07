@@ -58,9 +58,10 @@ jobs:
           name: build-artifacts-${{ github.sha }}
           path: artifacts/
 
-      - name: Install JFrog CLI
+      - name: Install JFrog CLI (explicit installation)
         run: |
           curl -fL https://getcli.jfrog.io | sh
+          sudo mv jfrog /usr/local/bin/jfrog
 
       - name: Authenticate JFrog CLI
         run: |
