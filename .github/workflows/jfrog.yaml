@@ -50,18 +50,17 @@ jobs:
           curl -fL https://getcli.jfrog.io | sh
           sudo mv jfrog /usr/local/bin/jfrog
 
-      - name: Authenticate JFrog CLI with Username & Password
+      - name: Authenticate JFrog CLI with Access Token
         run: |
-          jfrog config add my-artifactory-17 \
+          jfrog config add my-artifactory-19 \
             --artifactory-url https://trial2t885z.jfrog.io/artifactory \
-            --user "${{ secrets.ARTIFACTORY_USER }}" \
-            --password "${{ secrets.ARTIFACT_PASSWORD }}" \
+            --access-token "${{ secrets.JGROG-TOKEN }}" \
             --interactive=false
 
           echo "Checking JFrog connection..."
           jfrog rt ping || echo "JFrog connection failed"
           echo "Verifying Credentials..."
-          jfrog config show my-artifactory-17
+          jfrog config show my-artifactory-19
 
       - name: Push Build Artifacts to Artifactory
         run: |
