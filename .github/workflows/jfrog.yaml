@@ -3,7 +3,7 @@ name: CI Build, Test & Artifact Upload
 on:
   push:
     branches: 
-      - main 
+      - develop
   pull_request:
     branches:
       - develop
@@ -33,18 +33,6 @@ jobs:
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
 
-      - name: Copy Build Output for Artifact
-        run: |
-          mkdir -p artifacts
-          cp -r **/bin/Debug/* artifacts/
-
-      - name: Upload Build Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts-${{ github.sha }}
-          path: artifacts/
-
       - name: Install JFrog CLI
         run: |
           curl -fL https://getcli.jfrog.io | sh
@@ -52,7 +40,7 @@ jobs:
 
       - name: Authenticate JFrog CLI with Access Token
         run: |
-          jfrog config add my-artifactory-24 \
+          jfrog config add my-artifactory-26 \
             --artifactory-url https://trial2t885z.jfrog.io/artifactory \
             --access-token "${{ secrets.JGROG_TOKEN }}" \
             --interactive=false
