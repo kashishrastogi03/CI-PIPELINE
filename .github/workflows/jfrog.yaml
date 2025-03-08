@@ -52,10 +52,21 @@ jobs:
 
       - name: Authenticate JFrog CLI with Access Token
         run: |
-          jfrog config add my-artifactory-22 \
+          jfrog config add my-artifactory-24 \
             --artifactory-url https://trial2t885z.jfrog.io/artifactory \
             --access-token "${{ secrets.JGROG_TOKEN }}" \
             --interactive=false
+
+      - name: Verify JFrog Authentication
+        run: |
+          echo "Checking JFrog CLI configuration..."
+          jfrog config show
+
+          echo "Pinging Artifactory..."
+          jfrog rt ping
+
+          echo "Listing NuGet packages to confirm access..."
+          jfrog rt search "dotnet-nuget-local/*"
 
       # Add NuGet Source for Artifactory
       - name: Add NuGet Source
@@ -64,6 +75,14 @@ jobs:
           -Source "https://trial2t885z.jfrog.io/artifactory/api/nuget/v3/dotnet-nuget-local/index.json" \
           -username "${{ secrets.ARTIFACTORY_USER }}" \
           -password "${{ secrets.JGROG_TOKEN }}"
+
+      - name: Verify NuGet Authentication
+        run: |
+          echo "Checking configured NuGet sources..."
+          nuget sources list
+
+          echo "Checking NuGet API key authentication..."
+          nuget getapikey -Source Artifactory
 
       # Authenticate NuGet with API Key
       - name: Authenticate NuGet with Artifactory
