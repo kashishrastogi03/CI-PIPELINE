@@ -3,7 +3,7 @@ name: CI Build, Test & Artifact Upload
 on:
   push:
     branches: 
-      - develop
+      - main
   pull_request:
     branches:
       - develop
@@ -42,50 +42,10 @@ jobs:
         run: |
           jfrog config add my-artifactory-26 \
             --artifactory-url https://trial2t885z.jfrog.io/artifactory \
-            --access-token "${{ secrets.JGROG_TOKEN }}" \
+            --access-token "${{ secrets.JFROG_TOKEN }}" \
             --interactive=false
 
-      - name: Verify JFrog Authentication
+      - name: Upload Build Artifacts to JFrog
         run: |
-          echo "Checking JFrog CLI configuration..."
-          jfrog config show
-
-          echo "Pinging Artifactory..."
-          jfrog rt ping
-
-          echo "Listing NuGet packages to confirm access..."
-          jfrog rt search "dotnet-nuget-local/*"
-
-      # Add NuGet Source for Artifactory
-      - name: Add NuGet Source
-        run: |
-          nuget sources Add -Name Artifactory \
-          -Source "https://trial2t885z.jfrog.io/artifactory/api/nuget/v3/dotnet-nuget-local/index.json" \
-          -username "${{ secrets.ARTIFACTORY_USER }}" \
-          -password "${{ secrets.JGROG_TOKEN }}"
-
-      - name: Verify NuGet Authentication
-        run: |
-          echo "Checking configured NuGet sources..."
-          nuget sources list
-
-          echo "Checking NuGet API key authentication..."
-          nuget getapikey -Source Artifactory
-
-      # Authenticate NuGet with API Key
-      - name: Authenticate NuGet with Artifactory
-        run: |
-          nuget setapikey "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.JGROG_TOKEN }}" -Source Artifactory
-
-      # Push Build Artifacts to Artifactory
-      - name: Push Build Artifacts to Artifactory
-        run: |
-          jfrog rt u "artifacts/*" "dotnet-nuget/${{ github.sha }}/" --flat=false --build-name="dotnet-build" --build-number="${{ github.run_number }}"
-          echo "JFrog Upload Exit Code: $?"
-
-      # Push NuGet Package to Artifactory
-      - name: Push NuGet Package to Artifactory
-        run: |
-          dotnet nuget push "artifacts/*.nupkg" \
-          --source "Artifactory" \
-          --api-key "${{ secrets.JGROG_TOKEN }}"
+          jfrog rt u "CalculatorApp/bin/Debug/net8.0/*.dll" "dotnet-nuget-local/"
+          jfrog rt u "TestProject1/bin/Debug/net8.0/*.dll" "dotnet-nuget-local/"
