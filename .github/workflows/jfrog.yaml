@@ -52,15 +52,10 @@ jobs:
 
       - name: Authenticate JFrog CLI with Access Token
         run: |
-          jfrog config add my-artifactory-19 \
+          jfrog config add my-artifactory-20 \
             --artifactory-url https://trial2t885z.jfrog.io/artifactory \
             --access-token "${{ secrets.JGROG-TOKEN }}" \
             --interactive=false
-
-          echo "Checking JFrog connection..."
-          jfrog rt ping || echo "JFrog connection failed"
-          echo "Verifying Credentials..."
-          jfrog config show my-artifactory-19
 
       - name: Push Build Artifacts to Artifactory
         run: |
