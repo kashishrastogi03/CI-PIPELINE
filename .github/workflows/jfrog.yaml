@@ -33,19 +33,10 @@ jobs:
       - name: Build Solution
         run: dotnet build --configuration Debug --no-restore
 
-      - name: Install JFrog CLI
+      - name: Upload Build Artifacts to JFrog using curl
         run: |
-          curl -fL https://getcli.jfrog.io | sh
-          sudo mv jfrog /usr/local/bin/jfrog
-
-      - name: Authenticate JFrog CLI with Access Token
-        run: |
-          jfrog config add my-artifactory-26 \
-            --artifactory-url https://trial2t885z.jfrog.io/artifactory \
-            --access-token "${{ secrets.JFROG_TOKEN }}" \
-            --interactive=false
-
-      - name: Upload Build Artifacts to JFrog
-        run: |
-          jfrog rt u "CalculatorApp/bin/Debug/net8.0/*.dll" "dotnet-nuget-local/"
-          jfrog rt u "TestProject1/bin/Debug/net8.0/*.dll" "dotnet-nuget-local/"
+          for file in CalculatorApp/bin/Debug/net8.0/*.dll TestProject1/bin/Debug/net8.0/*.dll; do
+            curl -H "Authorization: Bearer ${{ secrets.JFROG_TOKEN }}" \
+                 -T "$file" \
+                 "https://trial2t885z.jfrog.io/artifactory/dotnet-nuget-local/$(basename $file)"
+          done
