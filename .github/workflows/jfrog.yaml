@@ -52,12 +52,33 @@ jobs:
 
       - name: Authenticate JFrog CLI with Access Token
         run: |
-          jfrog config add my-artifactory-20 \
+          jfrog config add my-artifactory-22 \
             --artifactory-url https://trial2t885z.jfrog.io/artifactory \
-            --access-token "${{ secrets.JGROG-TOKEN }}" \
+            --access-token "${{ secrets.JGROG_TOKEN }}" \
             --interactive=false
 
+      # Add NuGet Source for Artifactory
+      - name: Add NuGet Source
+        run: |
+          nuget sources Add -Name Artifactory \
+          -Source "https://trial2t885z.jfrog.io/artifactory/api/nuget/v3/dotnet-nuget-local/index.json" \
+          -username "${{ secrets.ARTIFACTORY_USER }}" \
+          -password "${{ secrets.JGROG_TOKEN }}"
+
+      # Authenticate NuGet with API Key
+      - name: Authenticate NuGet with Artifactory
+        run: |
+          nuget setapikey "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.JGROG_TOKEN }}" -Source Artifactory
+
+      # Push Build Artifacts to Artifactory
       - name: Push Build Artifacts to Artifactory
         run: |
           jfrog rt u "artifacts/*" "dotnet-nuget/${{ github.sha }}/" --flat=false --build-name="dotnet-build" --build-number="${{ github.run_number }}"
           echo "JFrog Upload Exit Code: $?"
+
+      # Push NuGet Package to Artifactory
+      - name: Push NuGet Package to Artifactory
+        run: |
+          dotnet nuget push "artifacts/*.nupkg" \
+          --source "Artifactory" \
+          --api-key "${{ secrets.JGROG_TOKEN }}"
