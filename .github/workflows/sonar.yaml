@@ -36,15 +36,13 @@ jobs:
 
       - name: Install ReportGenerator
         run: |
-          dotnet tool install -g dotnet-reportgenerator-globaltool
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+          echo "PATH=$HOME/.dotnet/tools:$PATH" >> $GITHUB_ENV
           export PATH="$HOME/.dotnet/tools:$PATH"
 
       - name: Convert Cobertura to OpenCover
         run: |
-         dotnet tool install --global dotnet-reportgenerator-globaltool
-         echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
-         echo "PATH=$HOME/.dotnet/tools:$PATH" >> $GITHUB_ENV
-         export PATH="$HOME/.dotnet/tools:$PATH"
          reportgenerator "-reports:coverage/**/coverage.cobertura.xml" "-targetdir:coverage" "-reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary"
 
       - name: SonarCloud Scan
