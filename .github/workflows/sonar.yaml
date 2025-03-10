@@ -23,43 +23,7 @@ jobs:
           echo "$HOME/.dotnet" >> $GITHUB_PATH
           echo "DOTNET_ROOT=$HOME/.dotnet" >> $GITHUB_ENV
           export DOTNET_ROOT=$HOME/.dotnet
-          export PATH=$HOME/.dotnet:$PATH
-
-      - name: Restore Dependencies
-        run: dotnet restore
-
-      - name: Build Project
-        run: dotnet build --configuration Debug --no-restore
-
-      - name: Run Tests & Generate Code Coverage
-        run: dotnet test --configuration Debug --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage
-
-      name: SonarCloud
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-jobs:
-  sonarcloud:
-    runs-on: self-hosted
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup .NET SDK
-        run: |
-          curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
-          echo "$HOME/.dotnet" >> $GITHUB_PATH
-          echo "DOTNET_ROOT=$HOME/.dotnet" >> $GITHUB_ENV
-          export DOTNET_ROOT=$HOME/.dotnet
-          export PATH=$HOME/.dotnet:$PATH
+          export PATH="$HOME/.dotnet:$HOME/.dotnet/tools:$PATH"
 
       - name: Restore Dependencies
         run: dotnet restore
@@ -73,25 +37,8 @@ jobs:
       - name: Convert Cobertura to OpenCover
         run: |
           dotnet tool install -g dotnet-reportgenerator-globaltool
+          export PATH="$HOME/.dotnet/tools:$PATH"
           reportgenerator "-reports:coverage/**/coverage.cobertura.xml" "-targetdir:coverage" "-reporttypes:Opencover"
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.projectKey=kashishrastogi03_CI-PIPELINE
-            -Dsonar.organization=kashishrastogi03
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.verbose=true
-            -Dsonar.sources=.
-            -Dsonar.language=cs
-            -Dsonar.inclusions=**/*.cs,**/*.html,**/*.css,**/*.xml
-            -Dsonar.exclusions=**/bin/**,**/obj/**,**/*.config
-            -Dsonar.cs.opencover.reportsPaths=coverage/coverage.opencover.xml
-
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
