@@ -41,10 +41,11 @@ jobs:
 
       - name: Convert Cobertura to OpenCover
         run: |
-          reportgenerator \
-            "-reports:coverage/**/coverage.cobertura.xml" \
-            "-targetdir:coverage" \
-            "-reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary"
+         dotnet tool install --global dotnet-reportgenerator-globaltool
+         echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+         echo "PATH=$HOME/.dotnet/tools:$PATH" >> $GITHUB_ENV
+         export PATH="$HOME/.dotnet/tools:$PATH"
+         reportgenerator "-reports:coverage/**/coverage.cobertura.xml" "-targetdir:coverage" "-reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary"
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
