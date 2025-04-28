@@ -1,8 +1,9 @@
-name: CI Build, Test & Artifact Upload
+name: CI Build, Test & Artifact Upload 
  
 on:
   push:
     branches:
+      - main
       - develop
       - 'feature-*' 
   pull_request:
