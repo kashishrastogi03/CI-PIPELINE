@@ -46,12 +46,24 @@ jobs:
           dotnet test --configuration Debug --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Verify Coverage File Exists
-        run: ls coverage/
+        run: |
+          echo "Listing files in coverage directory:"
+          ls ./coverage
+          if [ -z "$(find ./coverage -name 'coverage.opencover.xml')" ]; then
+            echo "No coverage file found!"
+            exit 1
+          fi
 
       - name: Rename Coverage Report
         run: |
           report=$(find ./coverage -name "coverage.opencover.xml" | head -n 1)
+          if [ -z "$report" ]; then
+            echo "Coverage report not found!"
+            exit 1
+          fi
+          echo "Found coverage report: $report"
           mv $report coverage/coverage.opencover.xml
+          echo "Coverage report renamed to coverage/coverage.opencover.xml"
 
       - name: End SonarCloud Analysis
         env:
