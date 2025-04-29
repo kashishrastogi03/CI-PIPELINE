@@ -1,4 +1,4 @@
-name: SonarCloud
+name: major assignment
 
 on:
   push:
@@ -48,4 +48,4 @@ jobs:
         run: |
           docker tag calculator-app:latest ${{ secrets.ACR_USERNAME }}.azurecr.io/calculator-app:latest
           docker push ${{ secrets.ACR_USERNAME }}.azurecr.io/calculator-app:latest
-w
+
