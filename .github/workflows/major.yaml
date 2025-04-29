@@ -45,6 +45,8 @@ jobs:
             /d:sonar.cs.analyzeGeneratedCode=true \
             /d:sonar.cs.analyzeRazorCode=true \
             /d:sonar.cs.ignoreHeaderComments=true \
+            /d:sonar.lang.patterns.cs="**/*.cs,**/*.razor,**/*.cshtml" \
+            /d:sonar.lang.patterns.web="**/*.html,**/*.xhtml,**/*.aspx,**/*.ascx,**/*.rhtml,**/*.erb,**/*.shtm,**/*.shtml,**/*.cmp,**/*.twig" \
             /d:sonar.c.file.suffixes=- \
             /d:sonar.cpp.file.suffixes=- \
             /d:sonar.objc.file.suffixes=-
