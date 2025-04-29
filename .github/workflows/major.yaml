@@ -1,6 +1,6 @@
 name: major assignment
 
-on:
+on: 
   push:
     branches:
       - main
