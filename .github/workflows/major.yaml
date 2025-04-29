@@ -38,7 +38,7 @@ jobs:
         with:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
-          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}   # Add the tenant ID here
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
 
       - name: Build Docker Image
         run: |
