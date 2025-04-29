@@ -56,14 +56,14 @@ jobs:
 
       - name: Rename Coverage Report
         run: |
-          report=$(find ./coverage -name "coverage.opencover.xml" | head -n 1)
-          if [ -z "$report" ]; then
-            echo "Coverage report not found!"
+          mkdir -p coverage
+          report=$(find ./coverage -name "*.xml" | head -n 1)
+          if [ -n "$report" ]; then
+            mv $report coverage/coverage.opencover.xml
+          else
+            echo "No coverage file found!"
             exit 1
           fi
-          echo "Found coverage report: $report"
-          mv $report coverage/coverage.opencover.xml
-          echo "Coverage report renamed to coverage/coverage.opencover.xml"
 
       - name: End SonarCloud Analysis
         env:
