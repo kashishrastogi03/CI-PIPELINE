@@ -41,10 +41,10 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.cs.opencover.reportsPaths="coverage/**/*.xml" \
-            /d:sonar.cs.file.suffixes=".cs,.razor,.cshtml" \  # Add .cshtml files here
-            /d:sonar.cs.analyzeGeneratedCode=true \  # Enable generated code analysis if needed
-            /d:sonar.cs.analyzeRazorCode=true \  # Enable Razor code analysis
-            /d:sonar.cs.ignoreHeaderComments=true  # Default behavior, ignore header comments
+            /d:sonar.cs.file.suffixes=".cs,.razor,.cshtml" \
+            /d:sonar.cs.analyzeGeneratedCode=true \
+            /d:sonar.cs.analyzeRazorCode=true \
+            /d:sonar.cs.ignoreHeaderComments=true \
             /d:sonar.c.file.suffixes=- \
             /d:sonar.cpp.file.suffixes=- \
             /d:sonar.objc.file.suffixes=-
