@@ -28,7 +28,7 @@ jobs:
       - name: Build Project
         run: dotnet build --configuration Debug
 
-      - name: Run Tests & Generate Coverage
+      - name: Run Unit Tests 
         run: |
           mkdir -p coverage
           dotnet test --configuration Debug 
@@ -44,8 +44,7 @@ jobs:
         run: |
           docker build -t calculator-app:latest .
 
-      - name: Push Docker Image to ACR
+      - name: Tag and Push Image
         run: |
-          docker tag calculator-app:latest ${{ secrets.ACR_USERNAME }}.azurecr.io/calculator-app:latest
-          docker push ${{ secrets.ACR_USERNAME }}.azurecr.io/calculator-app:latest
-
+          docker tag calculator-app:latest ${{ secrets.ACR_LOGIN_SERVER }}/calculator-app:latest
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/calculator-app:latest
