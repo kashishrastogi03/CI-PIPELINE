@@ -44,6 +44,14 @@ jobs:
         run: |
           docker build -t calculator-app:latest .
 
+      - name: Install Grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Scan Docker Image with Grype
+        run: |
+          grype calculator-app:latest --fail-on high
+
       - name: Tag and Push Image
         run: |
           docker tag calculator-app:latest ${{ secrets.ACR_LOGIN_SERVER }}/calculator-app:latest
