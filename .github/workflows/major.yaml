@@ -31,7 +31,7 @@ jobs:
       - name: Run Tests & Generate Coverage
         run: |
           mkdir -p coverage
-          dotnet test --configuration Debug --collect:"XPlat Code Coverage" --results-directory ./coverage
+          dotnet test --configuration Debug 
 
       - name: Login to Azure Container Registry
         uses: azure/docker-login@v1
