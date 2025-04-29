@@ -44,9 +44,11 @@ jobs:
         run: |
           docker build -t calculator-app:latest .
 
-      - name: Install Grype
+      - name: Install Grype (No Root)
         run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          mkdir -p ./bin
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b ./bin
+          echo "$(pwd)/bin" >> $GITHUB_PATH
 
       - name: Scan Docker Image with Grype
         run: |
