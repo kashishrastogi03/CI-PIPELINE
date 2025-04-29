@@ -35,7 +35,15 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
-          dotnet sonarscanner begin /k:"kashishrastogi03_CI-PIPELINE" /o:"kashishrastogi03" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="coverage/**/*.xml"
+          dotnet sonarscanner begin \
+            /k:"kashishrastogi03_CI-PIPELINE" \
+            /o:"kashishrastogi03" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.cs.opencover.reportsPaths="coverage/**/*.xml" \
+            /d:sonar.c.file.suffixes=- \
+            /d:sonar.cpp.file.suffixes=- \
+            /d:sonar.objc.file.suffixes=-
 
       - name: Build Project
         run: dotnet build --configuration Debug
